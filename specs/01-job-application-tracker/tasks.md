@@ -2,7 +2,8 @@
 
 Requires the foundation tasks F-1 to F-6 and F-10.
 
-> **Status:** all tasks done. Notes on where the code differs from the design are under
+> **Status:** all tasks done. T-8 passes locally against the real backend; its first CI run
+> will be on the pull request for this work. Notes on where the code differs from the design are under
 > *Implementation notes* in [`design.md`](design.md#implementation-notes).
 
 - [x] **T-1 Migration and model**
