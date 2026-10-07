@@ -2,8 +2,8 @@
 
 Each task lists the acceptance criteria it satisfies and how to check it's done.
 
-> **Status:** all tasks implemented. Two checks are still open: F-2 (`make dev` from a fresh
-> clone with Docker) and F-11 (CI green on GitHub). Notes on where the code differs from the
+> **Status:** all tasks implemented. One check is still open: F-2 (`make dev` from a fresh
+> clone with Docker). CI (F-11) went green on the pull request that added it. Notes on where the code differs from the
 > design are under *Implementation notes* in [`design.md`](design.md#implementation-notes).
 
 - [x] **F-1 Repository scaffold**
@@ -66,7 +66,7 @@ Each task lists the acceptance criteria it satisfies and how to check it's done.
   _Criteria:_ FND-1.1–FND-1.4, FND-5.1
   _Verify:_ Playwright smoke test clicks every nav link.
 
-- [ ] **F-11 CI**
+- [x] **F-11 CI**
   GitHub Actions workflow: lint, type check, backend tests (with a Postgres
   service), frontend tests and build.
   _Criteria:_ FND-4.3

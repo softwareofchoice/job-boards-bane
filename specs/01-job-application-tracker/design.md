@@ -90,6 +90,26 @@ logged, not shown to the user; a missing file isn't an error.
 | T-D2 | One multipart request for fields and files   | One step for the user, and lets the save be all-or-nothing (TRK-1.5).                       |
 | T-D3 | Trigram index for search                     | Fast, typo-tolerant `ILIKE` search on title and company without a search engine.           |
 
+## Implementation notes
+
+Where the code differs from the plan above, and why:
+
+- **All field errors in one response (TRK-1.4).** The create endpoint takes the form fields as
+  plain strings and checks the text fields and both files together, so a single 422 lists every
+  problem. Wrong file types and oversized files are reported as field errors (422) rather than
+  the 415/413 the shared `FileStore` raises, so the form can show them next to the field. The
+  helper for this is `app/core/validation.py` (`FieldErrors`), for reuse by the other sub-apps.
+- **Empty file parts.** Browsers send an empty, unnamed part for a file input left blank; it's
+  treated as "no file".
+- **Search index.** The trigram index uses the expression `(job_title || ' ') || company_name`,
+  declared once in `app/tracker/models.py` (`search_expression()`) and used by both the model's
+  index and the search query, so the planner can use the index. A test checks the query plan.
+- **Model registry.** `app/all_models.py` imports every feature's models for Alembic and the
+  tests; new features add their models there.
+- **Client upload limit.** The form checks files against 10 MB (the backend default) before
+  uploading; the server's `MAX_UPLOAD_MB` setting is still what's enforced.
+- **Delete confirmation** is an inline "Yes, delete / Cancel" prompt rather than a modal.
+
 ## Test strategy
 
 - **Unit:** URL normalisation cases; Pydantic validation (lengths, URL scheme).
