@@ -18,6 +18,7 @@ from sqlalchemy import text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from alembic import command  # noqa: E402
+from app import all_models  # noqa: E402, F401  (registers every table)
 from app.core.db import Base, get_engine, get_sessionmaker  # noqa: E402
 from app.core.deps import get_file_store, get_llm  # noqa: E402
 from app.core.files import FileStore  # noqa: E402

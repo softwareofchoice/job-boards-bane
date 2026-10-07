@@ -1,10 +1,16 @@
+import { Route, Routes } from "react-router-dom";
+
+import { ApplicationDetailPage } from "./ApplicationDetailPage";
+import { ApplicationListPage } from "./ApplicationListPage";
+import { NewApplicationPage } from "./NewApplicationPage";
+
+/** Job Application Tracker: `/tracker`, `/tracker/new`, `/tracker/:id`. */
 export default function TrackerPage() {
   return (
-    <section>
-      <h1>Job Application Tracker</h1>
-      <p>
-        Coming soon. See <code>specs/01-job-application-tracker</code> for what this page will do.
-      </p>
-    </section>
+    <Routes>
+      <Route index element={<ApplicationListPage />} />
+      <Route path="new" element={<NewApplicationPage />} />
+      <Route path=":id" element={<ApplicationDetailPage />} />
+    </Routes>
   );
 }
