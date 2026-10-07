@@ -7,10 +7,23 @@ LLM_MODEL ?= llama3.1:8b
 help: ## List the available commands
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
+# Dependencies are installed on demand: every command below that needs them depends on these
+# marker files, which are rebuilt whenever the lockfiles change.
+BACKEND_DEPS := backend/.venv/.make-installed
+FRONTEND_DEPS := frontend/node_modules/.make-installed
+
+$(BACKEND_DEPS): backend/pyproject.toml backend/uv.lock
+	cd backend && uv sync --locked
+	@touch $@
+
+$(FRONTEND_DEPS): frontend/package.json frontend/package-lock.json
+	cd frontend && npm ci
+	@touch $@
+
 .PHONY: install
-install: ## Install backend and frontend dependencies
-	cd backend && uv sync
-	cd frontend && npm install
+install: ## Install (or reinstall) backend and frontend dependencies
+	@rm -f $(BACKEND_DEPS) $(FRONTEND_DEPS)
+	@$(MAKE) --no-print-directory $(BACKEND_DEPS) $(FRONTEND_DEPS)
 
 .PHONY: db-up
 db-up: ## Start Postgres in Docker and wait until it's ready
@@ -26,37 +39,37 @@ llm-up: ## Start Ollama in Docker and pull the configured model
 	docker compose exec ollama ollama pull $(LLM_MODEL)
 
 .PHONY: migrate
-migrate: ## Apply database migrations
+migrate: $(BACKEND_DEPS) ## Apply database migrations
 	cd backend && uv run alembic upgrade head
 
 .PHONY: dev
-dev: db-up migrate ## Start Postgres, the backend (:8000) and the frontend (:5173)
+dev: $(FRONTEND_DEPS) db-up migrate ## Start Postgres, the backend (:8000) and the frontend (:5173)
 	@trap 'kill 0' EXIT; \
 	(cd backend && uv run uvicorn app.main:app --reload --port 8000) & \
 	(cd frontend && npm run dev) & \
 	wait
 
 .PHONY: lint
-lint: ## Lint and check formatting
+lint: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Lint and check formatting
 	cd backend && uv run ruff check . && uv run ruff format --check .
 	cd frontend && npm run lint
 
 .PHONY: typecheck
-typecheck: ## Run type checks
+typecheck: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Run type checks
 	cd backend && uv run mypy app
 	cd frontend && npm run typecheck
 
 .PHONY: test
-test: ## Run backend and frontend unit/integration tests (needs Postgres)
+test: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Run backend and frontend unit/integration tests (needs Postgres)
 	cd backend && uv run pytest
 	cd frontend && npm test
 
 .PHONY: e2e
-e2e: migrate ## Run the end-to-end browser tests (starts its own servers)
+e2e: $(FRONTEND_DEPS) migrate ## Run the end-to-end browser tests (starts its own servers)
 	cd frontend && npx playwright test
 
 .PHONY: format
-format: ## Format all code
+format: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Format all code
 	cd backend && uv run ruff check --fix . && uv run ruff format .
 	cd frontend && npm run format
 

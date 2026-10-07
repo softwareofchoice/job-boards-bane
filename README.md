@@ -20,8 +20,8 @@ files under `data/`, and the LLM features use a local model through
 
 ```bash
 cp .env.example .env    # optional: every setting has a default
-make install            # backend and frontend dependencies
-make dev                # Postgres + migrations + backend (:8000) + frontend (:5173)
+make dev                # installs dependencies, then starts Postgres, runs migrations,
+                        # and serves the backend (:8000) and frontend (:5173)
 ```
 
 Open <http://localhost:5173>. The badge in the top right shows whether the database and the
@@ -35,6 +35,7 @@ Run `make help` for the full list.
 | Command         | What it does                                                  |
 | --------------- | ------------------------------------------------------------- |
 | `make dev`      | Start everything for development, with auto-reload            |
+| `make install`  | Reinstall dependencies (other commands install them as needed) |
 | `make migrate`  | Apply database migrations                                     |
 | `make check`    | Lint, type check and run the tests (what CI runs, except E2E) |
 | `make e2e`      | Run the browser tests against the real backend and frontend   |
