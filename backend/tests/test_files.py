@@ -119,3 +119,18 @@ def test_download_unknown_file_is_404(client: TestClient) -> None:
     response = client.get("/api/files/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+def test_transaction_deletes_saved_files_when_block_raises(file_store: FileStore) -> None:
+    with pytest.raises(RuntimeError), file_store.transaction() as files:
+        first = files.save("resume", "a.pdf", PDF)
+        second = files.save("screenshot", "b.png", PNG)
+        raise RuntimeError("commit failed")
+    for stored in (first, second):
+        assert not (file_store.root / stored.relative_path).exists()
+
+
+def test_transaction_keeps_files_on_success(file_store: FileStore) -> None:
+    with file_store.transaction() as files:
+        stored = files.save("resume", "a.pdf", PDF)
+    assert file_store.path(stored).read_bytes() == PDF

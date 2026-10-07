@@ -10,6 +10,7 @@ from app.core.errors import register_error_handlers
 from app.core.jobs import fail_interrupted_jobs
 from app.core.logging import add_request_id_middleware, configure_logging
 from app.core.router import router as core_router
+from app.tracker.router import router as tracker_router
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     add_request_id_middleware(app)
     register_error_handlers(app)
     app.include_router(core_router)
+    app.include_router(tracker_router)
     return app
 
 

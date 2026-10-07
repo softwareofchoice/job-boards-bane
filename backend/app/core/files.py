@@ -1,9 +1,10 @@
 import contextlib
 import hashlib
+import logging
 import mimetypes
 import re
 import uuid
-from collections.abc import Collection
+from collections.abc import Collection, Iterator
 from pathlib import Path
 
 import filetype
@@ -11,6 +12,8 @@ from fastapi import UploadFile
 
 from app.core.errors import NotFoundError, UnsupportedFileTypeError, UploadTooLargeError
 from app.core.models import StoredFile
+
+logger = logging.getLogger(__name__)
 
 _CATEGORY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 _UNSAFE_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]+")
@@ -112,6 +115,29 @@ class FileStore:
             sha256=hashlib.sha256(data).hexdigest(),
         )
 
+    @contextlib.contextmanager
+    def transaction(self) -> Iterator["FileTransaction"]:
+        """Save files that are deleted again if the block raises (e.g. the DB commit fails).
+
+        with store.transaction() as files:
+            resume = files.save("resume", name, data)
+            session.add(resume)
+            session.commit()
+        """
+        tx = FileTransaction(self)
+        try:
+            yield tx
+        except BaseException:
+            tx.rollback()
+            raise
+
+    def delete_quietly(self, stored: StoredFile) -> None:
+        """Delete a file whose DB row is already gone; log instead of raising on failure."""
+        try:
+            self.delete(stored)
+        except Exception:
+            logger.exception("Couldn't delete file %s", stored.relative_path)
+
     def path(self, stored: StoredFile) -> Path:
         target = self._resolve(stored.relative_path)
         if not target.is_file():
@@ -130,3 +156,27 @@ class FileStore:
         if not target.is_relative_to(self.root):
             raise ValueError(f"Path escapes the data directory: {relative_path!r}")
         return target
+
+
+class FileTransaction:
+    """Tracks the files saved inside FileStore.transaction() so they can be removed on failure."""
+
+    def __init__(self, store: FileStore) -> None:
+        self._store = store
+        self._saved: list[StoredFile] = []
+
+    def save(
+        self,
+        category: str,
+        filename: str,
+        data: bytes,
+        allowed_types: Collection[str] | None = None,
+    ) -> StoredFile:
+        stored = self._store.save(category, filename, data, allowed_types)
+        self._saved.append(stored)
+        return stored
+
+    def rollback(self) -> None:
+        for stored in self._saved:
+            self._store.delete_quietly(stored)
+        self._saved.clear()

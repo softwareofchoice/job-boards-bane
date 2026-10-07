@@ -34,3 +34,49 @@ export function renderApp(path = "/") {
     </QueryClientProvider>,
   );
 }
+
+type Handler = (url: URL, init: RequestInit | undefined) => unknown;
+
+export interface RecordedCall {
+  method: string;
+  url: URL;
+  init: RequestInit | undefined;
+}
+
+/**
+ * Stub `fetch` with handlers keyed by "METHOD /path" (path without query string).
+ * A handler returns a JSON body (status 200), or a `Response` for anything else.
+ * `/api/health` answers healthy unless overridden. Returns the list of calls made.
+ */
+export function stubApi(handlers: Record<string, Handler>): RecordedCall[] {
+  const calls: RecordedCall[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://localhost");
+      const method = (init?.method ?? "GET").toUpperCase();
+      calls.push({ method, url, init });
+      const handler =
+        handlers[`${method} ${url.pathname}`] ??
+        (url.pathname === "/api/health" ? () => HEALTHY : undefined);
+      if (!handler) {
+        return new Response(JSON.stringify({ detail: "Not Found" }), { status: 404 });
+      }
+      const result = await handler(url, init);
+      if (result instanceof Response) {
+        return result;
+      }
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }),
+  );
+  return calls;
+}
+
+export function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
