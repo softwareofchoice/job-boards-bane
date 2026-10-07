@@ -78,7 +78,7 @@ there before implementation starts if you want something else.
 | Frontend        | React + TypeScript + Vite, React Router, TanStack Query              |
 | Scraping        | Playwright (Chromium)                                                |
 | Documents       | `python-docx` for `.docx`; LibreOffice headless to export to PDF and count pages |
-| Tests           | pytest (+ testcontainers for Postgres), Vitest, Playwright for E2E    |
+| Tests           | pytest (against a local test database), Vitest, Playwright for E2E   |
 | Tooling         | `uv`, Ruff, mypy, ESLint, Prettier, `make` targets                   |
 
 ## Open questions
