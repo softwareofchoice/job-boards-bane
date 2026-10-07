@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bane
+      POSTGRES_PASSWORD: bane
+      POSTGRES_DB: bane
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bane -d bane"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Optional: `make llm-up`. Skip this if you already run Ollama on the host.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  postgres-data:
+  ollama-models:

@@ -173,6 +173,24 @@ LLM-dependent pages when `llm` isn't `ok`.
 | D-5 | In-process background jobs                   | Single user, low volume; no Redis or worker process needed.                                                 | Celery/RQ/Arq: add if jobs need to run in parallel or survive restarts. |
 | D-6 | Modular monolith                             | One process to run; sub-apps stay separate packages.                                                        | One service per sub-app: unnecessary for a local single-user tool. |
 
+## Implementation notes
+
+Where the code differs from the plan above, and why:
+
+- **Test database:** tests use a real Postgres given by `TEST_DATABASE_URL` (default
+  `bane_test` on localhost; Docker Compose creates it) instead of testcontainers, so the tests
+  also run where Docker isn't available. The tests drop and recreate that database's schema.
+- **Health response** also has `llm_message`: the reason the LLM can't be used, shown in the
+  badge tooltip and the warning banner.
+- **Unexpected errors** are caught in the request-ID middleware rather than an exception
+  handler, so the log line and the response both carry the request ID.
+- **`FakeLLMClient`** lives in `app/core/llm_fake.py` (not under `tests/`) so later E2E runs can
+  start the backend with it.
+- **A model/migration drift test** (`test_models_match_migrations`) fails if a model changes
+  without a migration.
+- **File downloads** are inline only for images (other types download) and send
+  `X-Content-Type-Options: nosniff`.
+
 ## Test strategy
 
 - **Unit:** `FileStore` (path sanitising, type sniffing), `LLMClient` (retry on
