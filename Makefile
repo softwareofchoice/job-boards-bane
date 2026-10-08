@@ -38,6 +38,10 @@ llm-up: ## Start Ollama in Docker and pull the configured model
 	docker compose --profile llm up -d --wait ollama
 	docker compose exec ollama ollama pull $(LLM_MODEL)
 
+.PHONY: llm-check
+llm-check: $(BACKEND_DEPS) ## Score a sample posting with the local LLM (MODEL=... to compare models)
+	cd backend && uv run python -m app.llm_check $(if $(MODEL),--model $(MODEL),)
+
 .PHONY: migrate
 migrate: $(BACKEND_DEPS) ## Apply database migrations
 	cd backend && uv run alembic upgrade head

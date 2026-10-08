@@ -54,12 +54,18 @@ class LLMClient:
         *,
         timeout_s: float = 120,
         max_retries: int = 2,
+        num_ctx: int = 8192,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout_s = timeout_s
         self.max_retries = max_retries
+        # The context window, in tokens. Set explicitly because Ollama's default depends on its
+        # version and can be as small as 2048, which would silently cut long prompts short.
+        self.num_ctx = num_ctx
+        # Token counts and timings Ollama reported for the most recent reply (for llm-check).
+        self.last_usage: dict[str, int] = {}
         self._transport = transport
 
     async def complete(
@@ -115,13 +121,24 @@ class LLMClient:
         if wanted not in names:
             raise self._model_missing()
 
+    async def loaded_models(self) -> list[dict[str, Any]]:
+        """Models Ollama has in memory (`/api/ps`), including how much of each is on the GPU."""
+        async with self._client() as client:
+            try:
+                response = await client.get("/api/ps")
+                response.raise_for_status()
+            except httpx.HTTPError as exc:
+                raise self._unavailable() from exc
+        models = response.json().get("models", [])
+        return [m for m in models if isinstance(m, dict)]
+
     async def _chat(self, messages: list[Message], **options: Any) -> str:
         fmt = options.pop("format", None)
         body: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "options": options,
+            "options": {"num_ctx": self.num_ctx, **options},
         }
         if fmt is not None:
             body["format"] = fmt
@@ -138,9 +155,16 @@ class LLMClient:
                 f"{_error_text(response)}"
             )
         try:
-            return str(response.json()["message"]["content"])
+            data = response.json()
+            content = str(data["message"]["content"])
         except (ValueError, KeyError, TypeError) as exc:
             raise LLMInvalidResponseError("The local LLM server sent an unexpected reply.") from exc
+        self.last_usage = {
+            key: int(data[key])
+            for key in ("prompt_eval_count", "eval_count", "total_duration", "load_duration")
+            if isinstance(data.get(key), int)
+        }
+        return content
 
     def _client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(

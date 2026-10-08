@@ -186,6 +186,10 @@ Where the code differs from the plan above, and why:
   handler, so the log line and the response both carry the request ID.
 - **`FakeLLMClient`** lives in `app/core/llm_fake.py` (not under `tests/`) so later E2E runs can
   start the backend with it.
+- **Context window.** Every request sends `num_ctx` (`LLM_NUM_CTX`, default 8192), because
+  Ollama's default depends on its version and can be small enough to cut long prompts short.
+  `make llm-check` (`app/llm_check.py`) runs the real scoring prompt against the configured model
+  and reports validity, timing, prompt size against the window, repeatability and GPU share.
 - **A model/migration drift test** (`test_models_match_migrations`) fails if a model changes
   without a migration.
 - **File downloads** are inline only for images (other types download) and send
