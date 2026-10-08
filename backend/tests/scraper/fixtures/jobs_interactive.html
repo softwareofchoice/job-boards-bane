@@ -1,0 +1,51 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>jobs - Google Search</title>
+<style>
+  ul { height: 300px; overflow-y: auto; margin: 0; padding: 0; }
+  li { height: 120px; list-style: none; border-bottom: 1px solid #ccc; }
+</style></head>
+<body>
+<!-- Seven postings, three shown at first; scrolling the last into view loads up to three more.
+     Clicking a posting fills the details pane, like Google's jobs view. -->
+<ul id="list"></ul>
+<div id="tl_ditc"></div>
+<script>
+const JOBS = [
+  ["Python Developer", "Acme", "Austin, TX", "LinkedIn", "2 days ago", "Python, FastAPI and PostgreSQL."],
+  ["Backend Engineer", "Globex", "Remote", "Indeed", "5 days ago", "Go and Kubernetes."],
+  ["Data Engineer", "Initech", "Austin, TX", "Glassdoor", "1 day ago", "Python and Spark."],
+  ["Platform Engineer", "Umbrella", "Remote", "LinkedIn", "3 days ago", "AWS and Terraform."],
+  ["Senior Python Developer", "Hooli", "Austin, TX", "Hooli Careers", "Just posted", "Python and Django."],
+  ["Software Engineer", "Wonka", "Remote", "LinkedIn", "6 days ago", "TypeScript and React."],
+  ["Python Engineer", "Tyrell", "Austin, TX", "Indeed", "4 days ago", "Python and machine learning."],
+];
+const list = document.getElementById("list");
+const pane = document.getElementById("tl_ditc");
+let shown = 0;
+function addItems(n) {
+  for (const [i, job] of JOBS.slice(shown, shown + n).entries()) {
+    const index = shown + i;
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="PwjeAc" data-index="${index}">
+      <div class="BjJfJf">${job[0]}</div><div class="vNEEBe">${job[1]}</div>
+      <div class="Qk80Jf">${job[2]}</div><div class="Qk80Jf">via ${job[3]}</div>
+      <div class="ocResc"><span class="LL4CDc">${job[4]}</span></div></div>`;
+    li.firstElementChild.addEventListener("click", () => {
+      pane.innerHTML = `<div class="whazf">
+        <span class="DaDV9e"><a class="pMhGee" href="https://jobs.example.test/${index}">Apply</a></span>
+        <div class="YgLbBe"><span class="HBvzbc">Short summary.</span>
+        <div class="cVLgvc" role="button" aria-expanded="false">Show full description</div></div></div>`;
+      pane.querySelector(".cVLgvc").addEventListener("click", () => {
+        pane.querySelector(".HBvzbc").textContent = `${job[0]} at ${job[1]}. You will use ${job[5]}`;
+      });
+    });
+    list.appendChild(li);
+  }
+  shown = Math.min(JOBS.length, shown + n);
+}
+addItems(3);
+list.addEventListener("scroll", () => {
+  if (list.scrollTop + list.clientHeight >= list.scrollHeight - 5 && shown < JOBS.length) addItems(3);
+});
+</script>
+</body></html>

@@ -28,7 +28,8 @@ export default defineConfig({
   // Runs against the real backend (which needs a migrated database) and the Vite dev server.
   webServer: [
     {
-      command: "uv run uvicorn app.main:app --port 8000",
+      // Canned job postings and LLM replies, so the scraper flow runs without Google or Ollama.
+      command: "JOB_SOURCE=fake LLM_FAKE=true uv run uvicorn app.main:app --port 8000",
       cwd: backendDir,
       url: "http://localhost:8000/api/health",
       reuseExistingServer: !process.env.CI,

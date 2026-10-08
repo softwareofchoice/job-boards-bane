@@ -16,6 +16,10 @@ def get_file_store() -> FileStore:
 @lru_cache
 def get_llm() -> LLM:
     settings = get_settings()
+    if settings.llm_fake:
+        from app.demo import demo_llm
+
+        return demo_llm()
     return LLMClient(
         settings.llm_base_url,
         settings.llm_model,

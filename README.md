@@ -41,6 +41,14 @@ Run `make help` for the full list.
 | `make e2e`      | Run the browser tests against the real backend and frontend   |
 | `make format`   | Format all code                                               |
 
+### Web Job Scraper
+
+By default the scraper drives Google's jobs search in a browser. Run `make scraper-browser`
+once to download it, and `make scraper-canary` to check it can still read Google's page.
+Automated Google searches are against Google's terms of service and may be blocked; set
+`JOB_SOURCE=serpapi` and `SERPAPI_KEY` to use SerpAPI instead. To try the app without either,
+set `JOB_SOURCE=fake` (canned postings) and `LLM_FAKE=true` (canned LLM replies).
+
 The backend tests need the `bane_test` database, which Docker Compose creates. To use another
 database, set `TEST_DATABASE_URL`; the tests drop and recreate its schema.
 

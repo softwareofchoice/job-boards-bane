@@ -7,7 +7,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("health badge and LLM warning", () => {
   it("shows ok when everything is up, and no LLM warning", async () => {
     stubHealth();
-    renderApp("/scraper");
+    renderApp("/resume-rounder");
     expect(await screen.findByText("All systems ok")).toBeVisible();
     expect(screen.queryByRole("alert")).toBeNull();
   });

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,8 +22,27 @@ class Settings(BaseSettings):
     llm_model: str = "llama3.1:8b"
     llm_timeout_s: float = Field(default=120, gt=0)
     llm_max_retries: int = Field(default=2, ge=0)
+    # Answer LLM prompts with canned replies instead of calling Ollama. For E2E tests and demos.
+    llm_fake: bool = False
 
     max_upload_mb: int = Field(default=10, gt=0)
+
+    # Web Job Scraper (spec 02)
+    # "fake" returns canned postings, for trying the app and for E2E tests.
+    job_source: Literal["google_playwright", "serpapi", "fake"] = "google_playwright"
+    serpapi_key: str | None = None
+    scraper_delay_s: float = Field(default=2.0, ge=0)
+    scraper_headless: bool = True
+    # A Chromium binary to use instead of Playwright's own download (optional).
+    scraper_chromium_path: str | None = None
+    google_jobs_url: str = "https://www.google.com/search"
+    scorer_max_chars: int = Field(default=6000, ge=500)
+    # Weights for the overall score; they're normalised, so only their ratios matter.
+    score_weight_title: float = Field(default=30, ge=0)
+    score_weight_skills: float = Field(default=30, ge=0)
+    score_weight_experience: float = Field(default=15, ge=0)
+    score_weight_level: float = Field(default=15, ge=0)
+    score_weight_location: float = Field(default=10, ge=0)
 
     @property
     def max_upload_bytes(self) -> int:
