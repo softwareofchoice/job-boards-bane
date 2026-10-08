@@ -26,8 +26,8 @@ export function PastRuns() {
   });
 
   return (
-    <section className="past-runs">
-      <h2>Past searches</h2>
+    <section className="past-runs" aria-labelledby="past-searches-heading">
+      <h2 id="past-searches-heading">Past searches</h2>
       {error ? (
         <p role="alert" className="field-error">
           {error instanceof ApiError ? error.displayMessage : "Couldn't load past searches."}

@@ -60,9 +60,12 @@ test("search, watch it run, review the results, export CSV and YAML, re-import",
   expect(lines[0]).toMatch(/^rank,score,title,company,location,posted_date,url/);
   expect(lines).toHaveLength(9);
 
-  // The run is listed under past searches.
+  // The run is listed under past searches. (Postings on the run page share the search's title,
+  // so wait for the navigation and look only in the past-searches list.)
   await page.getByRole("link", { name: "← New search" }).click();
-  await expect(page.getByRole("link", { name: title })).toBeVisible();
+  await expect(page).toHaveURL(/\/scraper$/);
+  const pastSearches = page.getByRole("region", { name: "Past searches" });
+  await expect(pastSearches.getByRole("link", { name: title, exact: true })).toBeVisible();
 
   // Importing the exported file fills the form back in.
   await page.reload();
@@ -72,6 +75,6 @@ test("search, watch it run, review the results, export CSV and YAML, re-import",
   await expect(page.getByLabel("Number of jobs selected")).toHaveValue("3");
 
   // Clean up.
-  await page.getByRole("button", { name: `Delete search for ${title}` }).click();
-  await expect(page.getByRole("link", { name: title })).toHaveCount(0);
+  await pastSearches.getByRole("button", { name: `Delete search for ${title}` }).click();
+  await expect(pastSearches.getByRole("link", { name: title, exact: true })).toHaveCount(0);
 });
