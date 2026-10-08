@@ -13,8 +13,9 @@ files under `data/`, and the LLM features use a local model through
 - [Docker](https://docs.docker.com/get-docker/) (for Postgres, and optionally Ollama)
 - [uv](https://docs.astral.sh/uv/) 0.12 or newer (`uv self update`). Python 3.12 is installed by
   uv if needed.
-- Node.js 22 with npm 10 (the npm that comes with Node 22). With nvm or fnm, run `nvm use` /
-  `fnm use` in `frontend/` to pick it up from `.nvmrc`.
+- Node.js 22, 22.22.2 or later (required by jsdom), with npm 10 (the npm that comes with
+  Node 22). With nvm or fnm, run `nvm use` / `fnm use` in `frontend/` to pick it up from
+  `.nvmrc`.
 - [Ollama](https://ollama.com) for the scraper and Resume Rounder, either installed on your
   machine or with `make llm-up`
 
