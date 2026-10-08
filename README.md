@@ -11,10 +11,16 @@ files under `data/`, and the LLM features use a local model through
 ## Requirements
 
 - [Docker](https://docs.docker.com/get-docker/) (for Postgres, and optionally Ollama)
-- [uv](https://docs.astral.sh/uv/) (Python 3.12 is installed by uv if needed)
-- Node.js 22+
+- [uv](https://docs.astral.sh/uv/) 0.12 or newer (`uv self update`). Python 3.12 is installed by
+  uv if needed.
+- Node.js 22 with npm 10 (the npm that comes with Node 22). With nvm or fnm, run `nvm use` /
+  `fnm use` in `frontend/` to pick it up from `.nvmrc`.
 - [Ollama](https://ollama.com) for the scraper and Resume Rounder, either installed on your
   machine or with `make llm-up`
+
+These versions are pinned in the repo (`backend/.python-version`, `required-version` in
+`backend/pyproject.toml`, `frontend/.nvmrc`, `engines` in `frontend/package.json`), and CI reads
+the same files. With the wrong version, uv and `npm ci` stop with a message saying what's needed.
 
 ## Getting started
 
@@ -48,6 +54,13 @@ once to download it, and `make scraper-canary` to check it can still read Google
 Automated Google searches are against Google's terms of service and may be blocked; set
 `JOB_SOURCE=serpapi` and `SERPAPI_KEY` to use SerpAPI instead. To try the app without either,
 set `JOB_SOURCE=fake` (canned postings) and `LLM_FAKE=true` (canned LLM replies).
+
+### Dependencies
+
+Install exactly what the lockfiles say: the `make` commands run `uv sync --locked` and `npm ci`
+for you. To change dependencies, use `uv add` / `uv remove` in `backend/` and `npm install <pkg>`
+/ `npm uninstall <pkg>` in `frontend/`, and commit the lockfile with the manifest. Dependabot
+opens weekly PRs for Python, npm and GitHub Actions updates.
 
 The backend tests need the `bane_test` database, which Docker Compose creates. To use another
 database, set `TEST_DATABASE_URL`; the tests drop and recreate its schema.

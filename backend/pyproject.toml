@@ -26,6 +26,12 @@ dev = [
     "mypy>=1.11",
 ]
 
+[tool.uv]
+# The oldest uv this project is tested with. uv refuses to run below it, with a clear message;
+# CI's setup-uv reads this too. A floor only: a ceiling would go stale, since Dependabot
+# doesn't update this setting.
+required-version = ">=0.12"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
