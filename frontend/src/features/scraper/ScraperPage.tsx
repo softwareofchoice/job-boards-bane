@@ -1,13 +1,18 @@
-import { LlmWarning } from "../../components/LlmWarning";
+import { Route, Routes } from "react-router-dom";
 
+import { LlmWarning } from "../../components/LlmWarning";
+import { RunPage } from "./RunPage";
+import { SearchPage } from "./SearchPage";
+
+/** Web Job Scraper: `/scraper` (search + past runs) and `/scraper/runs/:id`. */
 export default function ScraperPage() {
   return (
-    <section>
+    <>
       <LlmWarning />
-      <h1>Web Job Scraper</h1>
-      <p>
-        Coming soon. See <code>specs/02-web-job-scraper</code> for what this page will do.
-      </p>
-    </section>
+      <Routes>
+        <Route index element={<SearchPage />} />
+        <Route path="runs/:id" element={<RunPage />} />
+      </Routes>
+    </>
   );
 }

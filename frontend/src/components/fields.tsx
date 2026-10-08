@@ -8,6 +8,7 @@ import {
   type InputHTMLAttributes,
   type KeyboardEvent,
   type ReactNode,
+  type SelectHTMLAttributes,
 } from "react";
 
 interface FieldShellProps {
@@ -82,6 +83,35 @@ export function NumberField(props: InputProps) {
 
 export function FileField(props: InputProps) {
   return <Input type="file" {...props} />;
+}
+
+type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "id"> & {
+  label: string;
+  error?: string;
+  hint?: ReactNode;
+  options: readonly (readonly [string, string])[];
+  placeholder?: string;
+};
+
+export function SelectField({ label, error, hint, options, placeholder, ...rest }: SelectProps) {
+  const { id, describedBy } = useFieldIds(error, hint);
+  return (
+    <FieldShell id={id} label={label} required={rest.required} error={error} hint={hint}>
+      <select
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        {...rest}
+      >
+        {placeholder !== undefined ? <option value="">{placeholder}</option> : null}
+        {options.map(([value, text]) => (
+          <option key={value} value={value}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </FieldShell>
+  );
 }
 
 interface TagInputProps {

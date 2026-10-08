@@ -252,6 +252,38 @@ UTF-8 with a BOM (opens cleanly in Excel); lists joined with `; `. Filename:
 | S-D4 | Swappable `JobSource`                             | Lowers the Google scraping risk; adds other sources without touching scoring.        |
 | S-D5 | YAML handled in the browser                       | Nothing to store server-side; works offline; the server still checks inputs.         |
 
+## Implementation notes
+
+Where the code differs from the plan above, and why:
+
+- **Google layout is unverified.** Google wasn't reachable from the environment this was built
+  in, so `google_selectors.py` follows Google's long-standing jobs layout and the fixtures in
+  `backend/tests/scraper/fixtures/` are hand-made to match. The parsing and browser logic are
+  tested (including a real Chromium clicking through an interactive fixture page), but whether
+  Google still uses this markup is not. Run `make scraper-canary` (and `SAVE=1` to keep the
+  page) on a machine that can reach Google, then update the selectors and fixtures if needed.
+- **Google failures are clear errors.** If the page can't load at all, or no browser is
+  installed, the run fails with a message saying what to do (`make scraper-browser`).
+- **SerpAPI** is implemented and tested against recorded-style responses, not the live API (no
+  key was available). It doesn't pass a date filter to SerpAPI; postings are filtered on the
+  parsed date like the Google source.
+- **Demo mode.** `JOB_SOURCE=fake` returns canned postings and `LLM_FAKE=true` answers prompts
+  with canned replies (`app/demo.py`). The E2E tests use both, so the whole flow is tested
+  without Google or Ollama, and they let someone try the app before setting either up.
+- **Frontend validation** is hand-written to mirror `SearchOptions` (as in the tracker) rather
+  than a Zod schema generated from OpenAPI; the server validates again either way.
+- **Shared skill matching.** The alias table and matching live in `app/core/skills.py` so
+  Resume Rounder (spec 03, task R-7) can reuse them.
+- **De-duplication** keeps the duplicate with the longest description, including its own
+  spelling of the title.
+- **One search at a time** is an in-process lock, released when the run's background task ends
+  however it ends. It holds for the single-process server this app runs as; it would not hold
+  across several server processes.
+- **Extras:** a "Search again" button on a run fills the form with that run's options, and the
+  past-searches list refreshes itself while a search is running.
+- **CI runs the browser tests**: the backend job installs Chromium and sets `REQUIRE_BROWSER=1`,
+  so a missing browser fails the build instead of skipping the tests.
+
 ## Test strategy
 
 - **Unit:** `SearchOptions` validation (X > N, ranges); YAML round trip

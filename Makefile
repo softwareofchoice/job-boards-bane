@@ -68,6 +68,14 @@ test: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Run backend and frontend unit/integrat
 e2e: $(FRONTEND_DEPS) migrate ## Run the end-to-end browser tests (starts its own servers)
 	cd frontend && npx playwright test
 
+.PHONY: scraper-browser
+scraper-browser: $(BACKEND_DEPS) ## Download the Chromium the job scraper drives
+	cd backend && uv run playwright install chromium
+
+.PHONY: scraper-canary
+scraper-canary: $(BACKEND_DEPS) ## Live check that the scraper still reads Google (SAVE=1 saves the page)
+	cd backend && uv run python -m app.scraper.canary $(if $(SAVE),--save,)
+
 .PHONY: format
 format: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Format all code
 	cd backend && uv run ruff check --fix . && uv run ruff format .
