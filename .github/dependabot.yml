@@ -21,6 +21,13 @@ updates:
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 (the Go-based compiler) drops the JavaScript API that typescript-eslint
+      # builds on, so typescript-eslint 8.x requires TypeScript <6.1 and npm ci fails with
+      # ERESOLVE. Remove this once typescript-eslint supports TS 7:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
