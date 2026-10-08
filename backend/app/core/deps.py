@@ -25,4 +25,5 @@ def get_llm() -> LLM:
         settings.llm_model,
         timeout_s=settings.llm_timeout_s,
         max_retries=settings.llm_max_retries,
+        num_ctx=settings.llm_num_ctx,
     )

@@ -34,6 +34,17 @@ Open <http://localhost:5173>. The badge in the top right shows whether the datab
 local LLM are reachable. To use the LLM features, run `ollama serve` and
 `ollama pull llama3.1:8b` (or `make llm-up` to run Ollama in Docker instead).
 
+### Local LLM
+
+`make llm-check` scores a sample posting with the real model a few times and reports whether
+the replies were valid, how long each call took, how much of the context window the prompt used,
+and how much of the model is on the GPU. Compare models with `make llm-check MODEL=qwen2.5:7b`.
+
+An 8 GB GPU (e.g. an RTX 3070) runs 7B–8B models fully on the GPU at the default
+`LLM_NUM_CTX=8192`. If `llm-check` shows less than 100% on the GPU, use a smaller model or lower
+`LLM_NUM_CTX`. The Docker setup (`make llm-up`) doesn't pass the GPU to the container, so install
+Ollama directly for GPU speed.
+
 ## Common commands
 
 Run `make help` for the full list.

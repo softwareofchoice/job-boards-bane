@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     llm_model: str = "llama3.1:8b"
     llm_timeout_s: float = Field(default=120, gt=0)
     llm_max_retries: int = Field(default=2, ge=0)
+    # Context window in tokens. 8192 fits an 8B model on an 8 GB GPU with room to spare.
+    llm_num_ctx: int = Field(default=8192, ge=2048)
     # Answer LLM prompts with canned replies instead of calling Ollama. For E2E tests and demos.
     llm_fake: bool = False
 

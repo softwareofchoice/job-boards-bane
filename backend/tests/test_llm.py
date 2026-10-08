@@ -50,7 +50,7 @@ async def test_complete_sends_system_and_user_messages() -> None:
         {"role": "system", "content": "Be brief"},
         {"role": "user", "content": "Hi"},
     ]
-    assert body["options"] == {"temperature": 0}
+    assert body["options"] == {"num_ctx": 8192, "temperature": 0}
 
 
 async def test_complete_json_retries_after_invalid_reply() -> None:
@@ -136,3 +136,31 @@ async def test_check_unreachable() -> None:
 
     with pytest.raises(LLMUnavailableError):
         await make_client(handler).check()
+
+
+async def test_context_window_is_configurable_and_usage_is_recorded() -> None:
+    sent: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "message": {"role": "assistant", "content": "ok"},
+                "prompt_eval_count": 812,
+                "eval_count": 40,
+                "total_duration": 1_500_000_000,
+            },
+        )
+
+    client = LLMClient(
+        "http://llm.test", "llama3.1:8b", num_ctx=4096, transport=httpx.MockTransport(handler)
+    )
+    await client.complete("Hi", temperature=0.5)
+
+    assert sent[0]["options"] == {"num_ctx": 4096, "temperature": 0.5}
+    assert client.last_usage == {
+        "prompt_eval_count": 812,
+        "eval_count": 40,
+        "total_duration": 1_500_000_000,
+    }
