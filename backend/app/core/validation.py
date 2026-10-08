@@ -1,9 +1,26 @@
 """Collect field errors from several checks and report them together as one 422 (FND-5.1)."""
 
-from typing import Any
+from typing import Annotated, Any
+from urllib.parse import urlsplit
 
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, ValidationError
+from pydantic import AfterValidator, BaseModel, StringConstraints, ValidationError
+
+MAX_URL_LENGTH = 2048
+
+
+def check_http_url(value: str) -> str:
+    parts = urlsplit(value)
+    if parts.scheme.lower() not in ("http", "https") or not parts.hostname:
+        raise ValueError("Enter a full web address starting with http:// or https://")
+    return value
+
+
+HttpUrlText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_URL_LENGTH),
+    AfterValidator(check_http_url),
+]
 
 
 class FieldErrors:

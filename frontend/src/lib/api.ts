@@ -8,7 +8,7 @@ interface ValidationIssue {
 }
 
 interface AppErrorBody {
-  error: { code: string; message: string; request_id: string };
+  error: { code: string; message: string; request_id: string; [extra: string]: unknown };
 }
 
 export class ApiError extends Error {
@@ -17,6 +17,8 @@ export class ApiError extends Error {
   readonly requestId: string | null;
   /** Server-side validation errors by field name, for showing next to each field (FND-5.1). */
   readonly fieldErrors: FieldErrors;
+  /** Extra fields of an error the UI can act on, e.g. `existing_id` for a duplicate. */
+  readonly details: Record<string, unknown>;
 
   constructor(opts: {
     status: number;
@@ -24,6 +26,7 @@ export class ApiError extends Error {
     message: string;
     requestId?: string | null;
     fieldErrors?: FieldErrors;
+    details?: Record<string, unknown>;
   }) {
     super(opts.message);
     this.name = "ApiError";
@@ -31,6 +34,7 @@ export class ApiError extends Error {
     this.code = opts.code;
     this.requestId = opts.requestId ?? null;
     this.fieldErrors = opts.fieldErrors ?? {};
+    this.details = opts.details ?? {};
   }
 
   /** The message to show the user, with the request ID when there is one (FND-5.2). */
@@ -74,11 +78,13 @@ export async function toApiError(response: Response): Promise<ApiError> {
     // Not JSON (e.g. a proxy error page); fall through to the generic message.
   }
   if (isAppErrorBody(body)) {
+    const { code, message, request_id, ...details } = body.error;
     return new ApiError({
       status: response.status,
-      code: body.error.code,
-      message: body.error.message,
-      requestId: body.error.request_id ?? requestId,
+      code,
+      message,
+      requestId: request_id ?? requestId,
+      details,
     });
   }
   if (response.status === 422 && isValidationBody(body)) {

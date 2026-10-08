@@ -1,13 +1,20 @@
-import { LlmWarning } from "../../components/LlmWarning";
+import { Route, Routes } from "react-router-dom";
 
+import { LlmWarning } from "../../components/LlmWarning";
+import { GeneratePage } from "./GeneratePage";
+import { GenerationPage } from "./GenerationPage";
+import { SkillsPage } from "./SkillsPage";
+
+/** Resume Rounder: `/resume-rounder`, `/resume-rounder/skills`, `/resume-rounder/generations/:id`. */
 export default function RounderPage() {
   return (
-    <section>
+    <>
       <LlmWarning />
-      <h1>Resume Rounder</h1>
-      <p>
-        Coming soon. See <code>specs/03-resume-rounder</code> for what this page will do.
-      </p>
-    </section>
+      <Routes>
+        <Route index element={<GeneratePage />} />
+        <Route path="skills" element={<SkillsPage />} />
+        <Route path="generations/:id" element={<GenerationPage />} />
+      </Routes>
+    </>
   );
 }

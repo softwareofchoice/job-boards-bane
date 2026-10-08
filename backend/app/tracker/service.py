@@ -1,7 +1,6 @@
 """Job Application Tracker logic, independent of HTTP."""
 
 import uuid
-from dataclasses import dataclass
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import func, select
@@ -9,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
 from app.core.files import FileStore
+from app.core.uploads import Upload
 from app.tracker.models import Application, search_expression
 from app.tracker.schemas import (
     RESUME_TYPES,
@@ -18,12 +18,6 @@ from app.tracker.schemas import (
     DuplicateCheck,
     FileOut,
 )
-
-
-@dataclass(frozen=True)
-class Upload:
-    filename: str
-    data: bytes
 
 
 def normalize_url(url: str) -> str:

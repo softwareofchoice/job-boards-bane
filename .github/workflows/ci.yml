@@ -28,8 +28,10 @@ jobs:
         working-directory: backend
     env:
       TEST_DATABASE_URL: postgresql+psycopg://bane:bane@localhost:5432/bane_test
-      # The scraper's browser tests must run in CI, not skip.
+      # The scraper's browser tests and the Resume Rounder's LibreOffice tests must run in CI,
+      # not skip.
       REQUIRE_BROWSER: "1"
+      REQUIRE_SOFFICE: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -39,6 +41,8 @@ jobs:
       - run: uv sync --locked
       - name: Install Chromium for the scraper tests
         run: uv run playwright install --with-deps chromium
+      - name: Install LibreOffice for the Resume Rounder tests
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .
       - name: Type check
@@ -101,6 +105,8 @@ jobs:
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
+      - name: Install LibreOffice for the Resume Rounder
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui
       - run: npx playwright test
         working-directory: frontend
       - uses: actions/upload-artifact@v6

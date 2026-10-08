@@ -235,6 +235,60 @@ All routes are under `/api/rounder`.
 | R-D4 | Measure length by rendering to PDF             | Page count is what the user sees; estimating from word counts misses fonts and margins.     |
 | R-D5 | Made-up facts check + "nothing else changed" check | The biggest risks of LLM-written resumes are made-up claims and broken layout.        |
 
+## Implementation notes
+
+Where the code differs from the plan above, and why:
+
+- **Modules.** `resume_doc.py` (read, write, check), `posting.py` (fetch), `matching.py`,
+  `rewrite.py` (budget, facts check, one entry), `generate.py` (steps 3–8, no database, shared
+  with `make rounder-eval`), `generation_service.py` (the job) and `pages.py` (LibreOffice).
+- **Paragraphs are counted in reading order including table cells**, so entries in a table are
+  read and rewritten like any other; the report warns that the layout should be checked. Text
+  boxes are skipped with a warning.
+- **Section end.** For a Word heading style, the section ends at the next heading of the same or
+  a higher level, so roles written as "Heading 2" stay inside "Heading 1 Experience". Otherwise
+  it ends at the next heading-like paragraph formatted exactly like the experience heading
+  (style, bold, caps, size). Typed bullet characters ("•", "-") are kept when the text is
+  replaced.
+- **Length** is measured as a fraction (`pages - 1 + how far down the last page the text
+  reaches`, from `pdfplumber`), so 1.5-page targets work and the suggested target is the
+  smallest allowed length the template already fits. Text in the bottom margin (a footer with
+  page numbers) is ignored so it doesn't make every last page look full. `pypdf` isn't needed.
+- **Attempts.** "At most 3 attempts" counts renders: the first try plus up to two shortenings.
+  Shortening stops early when no entry can be cut further, and the closest attempt is returned
+  with the overflow (RND-3.9).
+- **Space budget.** When the target is longer than the template, every entry keeps its length
+  and the extra goes to entries with matched skills. When it's shorter, entries share the total
+  by original length boosted by relevance (up to 1.5× for the most relevant), so one entry
+  can't take over. The scale is capped between 0.3× and 1.25× the original bullets, and an
+  entry keeps at least one bullet (80 characters). Entries with no matched skills keep their
+  bullets unchanged unless their budget shrinks. A reply more than 15% over its budget loses
+  trailing bullets.
+- **Stricter made-up facts check.** Allowed sources are the entry's original bullets and header
+  and the matched skill notes, **not** the posting's skills: otherwise a skill the candidate
+  doesn't have could be written in (RND-3.7). Checked: numbers, capitalised words that don't
+  start the bullet or a sentence (a singular or plural of a known word is fine), and technology names from the alias table written in lower
+  case (except groups with everyday words such as "go" or "rest").
+- **Skill matching** also counts a posting phrase that mentions a saved skill ("experience with
+  Kubernetes in production") as a match without asking the LLM.
+- **Preflight** returns the experience entries, the headings to choose from and any warnings;
+  a missing experience section is a normal result (not an error) so the UI can ask for the
+  heading. `POST /generations` re-checks everything and also needs a chosen heading if none was
+  found. The posting URL is fetched again by the job, which saves the text it used.
+- **`resume_generations.experience_heading_idx`** (not in the data model above) records the
+  experience heading used, chosen or found, so a generation can be reproduced.
+- **Errors carry details.** A duplicate skill's 409 has `existing_id` next to `code` and
+  `message`; the frontend's `ApiError.details` exposes such fields.
+- **Settings:** `SOFFICE_PATH`, `SOFFICE_TIMEOUT_S`, `POSTING_BROWSER_FALLBACK` (the browser
+  fallback reuses `SCRAPER_CHROMIUM_PATH`).
+- **Demo mode.** `LLM_FAKE=true` answers the rounder's prompts too (skills from the alias table
+  and tech-looking words; rewrites from the skill notes), so the E2E test runs the real pipeline,
+  including LibreOffice, without Ollama.
+- **CI** installs `libreoffice-writer-nogui` in the backend and E2E jobs and sets
+  `REQUIRE_SOFFICE=1`, so the LibreOffice test fails instead of skipping.
+- **Also added:** `make rounder-samples` writes the sample resumes to `data/samples/` for trying
+  the app.
+
 ## Test strategy
 
 - **Fixture resumes** (`tests/fixtures/resumes/`): headings as Word styles;

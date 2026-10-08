@@ -80,6 +80,14 @@ scraper-browser: $(BACKEND_DEPS) ## Download the Chromium the job scraper drives
 scraper-canary: $(BACKEND_DEPS) ## Live check that the scraper still reads Google (SAVE=1 saves the page)
 	cd backend && uv run python -m app.scraper.canary $(if $(SAVE),--save,)
 
+.PHONY: rounder-eval
+rounder-eval: $(BACKEND_DEPS) ## Tailor sample resumes with the real local LLM; reports go to data/eval/
+	cd backend && uv run python -m app.rounder_eval $(if $(MODEL),--model $(MODEL),)
+
+.PHONY: rounder-samples
+rounder-samples: $(BACKEND_DEPS) ## Write the sample resumes (.docx) to data/samples/ to try the Resume Rounder
+	cd backend && uv run python -m app.rounder.sample_resumes ../data/samples
+
 .PHONY: format
 format: $(BACKEND_DEPS) $(FRONTEND_DEPS) ## Format all code
 	cd backend && uv run ruff check --fix . && uv run ruff format .

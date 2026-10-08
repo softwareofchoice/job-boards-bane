@@ -1,35 +1,20 @@
 import uuid
 from datetime import datetime
 from typing import Annotated
-from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from app.core.files import DOCX, PDF
 from app.core.models import StoredFile
+from app.core.validation import HttpUrlText
 
-PDF = "application/pdf"
-DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 RESUME_TYPES = {PDF: "PDF", DOCX: "DOCX"}
 SCREENSHOT_TYPES = {"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WebP"}
-
-MAX_URL_LENGTH = 2048
-
-
-def check_http_url(value: str) -> str:
-    parts = urlsplit(value)
-    if parts.scheme.lower() not in ("http", "https") or not parts.hostname:
-        raise ValueError("Enter a full web address starting with http:// or https://")
-    return value
 
 
 Name = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=200),
-]
-HttpUrlText = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_URL_LENGTH),
-    AfterValidator(check_http_url),
 ]
 
 
