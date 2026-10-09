@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     score_weight_level: float = Field(default=15, ge=0)
     score_weight_location: float = Field(default=10, ge=0)
 
+    # Resume Rounder (spec 03)
+    # LibreOffice measures page counts and exports PDFs. A full path if it isn't on PATH.
+    soffice_path: str = "soffice"
+    soffice_timeout_s: float = Field(default=120, gt=0)
+    # Open job posting URLs in a browser when the plain download has too little text.
+    posting_browser_fallback: bool = True
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024

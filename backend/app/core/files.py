@@ -15,6 +15,9 @@ from app.core.models import StoredFile
 
 logger = logging.getLogger(__name__)
 
+PDF = "application/pdf"
+DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
 _CATEGORY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 _UNSAFE_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]+")
 _MAX_NAME_LEN = 100

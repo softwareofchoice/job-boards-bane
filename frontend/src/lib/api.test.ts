@@ -75,6 +75,15 @@ describe("api", () => {
     const error = (await api("/api/x").catch((e: unknown) => e)) as ApiError;
     expect(error.code).toBe("internal_error");
     expect(error.displayMessage).toBe("Something went wrong. (reference: r1)");
+    expect(error.details).toEqual({});
+  });
+
+  it("keeps extra fields of an app error as details", async () => {
+    respond(409, {
+      error: { code: "duplicate_skill", message: "Taken.", request_id: "r2", existing_id: "s1" },
+    });
+    const error = (await api("/api/x").catch((e: unknown) => e)) as ApiError;
+    expect(error.details).toEqual({ existing_id: "s1" });
   });
 
   it("handles non-JSON errors", async () => {

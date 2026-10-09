@@ -9,6 +9,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
 
 interface FieldShellProps {
@@ -83,6 +84,26 @@ export function NumberField(props: InputProps) {
 
 export function FileField(props: InputProps) {
   return <Input type="file" {...props} />;
+}
+
+type TextAreaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id"> & {
+  label: string;
+  error?: string;
+  hint?: ReactNode;
+};
+
+export function TextAreaField({ label, error, hint, ...rest }: TextAreaProps) {
+  const { id, describedBy } = useFieldIds(error, hint);
+  return (
+    <FieldShell id={id} label={label} required={rest.required} error={error} hint={hint}>
+      <textarea
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        {...rest}
+      />
+    </FieldShell>
+  );
 }
 
 type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "id"> & {

@@ -18,6 +18,9 @@ files under `data/`, and the LLM features use a local model through
   `.nvmrc`.
 - [Ollama](https://ollama.com) for the scraper and Resume Rounder, either installed on your
   machine or with `make llm-up`
+- [LibreOffice](https://www.libreoffice.org) for the Resume Rounder, which uses it to measure
+  page counts and export PDFs (`soffice` on your `PATH`, or set `SOFFICE_PATH`). On Debian or
+  Ubuntu: `sudo apt-get install libreoffice-writer-nogui`; on macOS: `brew install --cask libreoffice`.
 
 These versions are pinned in the repo (`backend/.python-version`, `required-version` in
 `backend/pyproject.toml`, `frontend/.nvmrc`, `engines` in `frontend/package.json`), and CI reads
@@ -66,6 +69,18 @@ once to download it, and `make scraper-canary` to check it can still read Google
 Automated Google searches are against Google's terms of service and may be blocked; set
 `JOB_SOURCE=serpapi` and `SERPAPI_KEY` to use SerpAPI instead. To try the app without either,
 set `JOB_SOURCE=fake` (canned postings) and `LLM_FAKE=true` (canned LLM replies).
+
+### Resume Rounder
+
+Save your skills on the **Your skills** page, each with the role (job) where you used it, written
+the way that job appears in your resume. Then upload your resume as a Word `.docx`, paste a job
+posting (or give its URL), and pick a target length. Only the bullet points in the experience
+section are rewritten, using facts from your resume and your skill summaries; the rest of the
+document is left exactly as it is, and the result is checked for that before it's saved.
+
+`make rounder-samples` writes sample resumes to `data/samples/` to try it with, and
+`make rounder-eval` tailors them to three sample postings with the real model and writes the
+reports to `data/eval/` for you to read (not run in CI).
 
 ### Dependencies
 
