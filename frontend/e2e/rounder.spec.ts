@@ -65,7 +65,10 @@ test("add skills, tailor a resume and download it", async ({ page, request }) =>
   await page.getByLabel("Company name").fill("Initech");
   await page.getByRole("button", { name: "Check resume" }).click();
 
-  await expect(page.getByText("Found 3 roles in your experience section.")).toBeVisible();
+  // The check renders the resume with LibreOffice, whose first start can take a while.
+  await expect(page.getByText("Found 3 roles in your experience section.")).toBeVisible({
+    timeout: 30_000,
+  });
   await expect(page.getByLabel("Target length")).toHaveValue("1");
   await page.getByRole("button", { name: "Generate resume" }).click();
 

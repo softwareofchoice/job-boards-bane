@@ -4,7 +4,96 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { ApiError } from "../../lib/api";
 import { formatBytes, formatDateTime } from "../../lib/format";
-import { deleteApplication, getApplication, trackerKeys } from "./api";
+import {
+  changeStatus,
+  deleteApplication,
+  getApplication,
+  trackerKeys,
+  undoStatusChange,
+  type Application,
+  type Status,
+} from "./api";
+import { StatusBadge } from "./StatusBadge";
+import { MOVE_LABELS, STATUS_LABELS } from "./status";
+
+/** Current status, the allowed next steps, undo and the history (TRK-4.5, TRK-4.6). */
+function StatusPanel({ application }: { application: Application }) {
+  const queryClient = useQueryClient();
+  const id = application.id;
+
+  async function saved(updated: Application) {
+    queryClient.setQueryData(trackerKeys.detail(id), updated);
+    await queryClient.invalidateQueries({ queryKey: trackerKeys.all });
+  }
+
+  const move = useMutation({
+    mutationFn: (status: Status) => changeStatus(id, status),
+    onSuccess: saved,
+  });
+  const undo = useMutation({ mutationFn: () => undoStatusChange(id), onSuccess: saved });
+
+  const busy = move.isPending || undo.isPending;
+  const error = move.error ?? undo.error;
+  const history = application.status_history;
+  const latest = history[history.length - 1];
+  const canUndo = history.length > 1;
+
+  return (
+    <section className="status-panel" aria-labelledby="status-heading">
+      <h2 id="status-heading">
+        Status <StatusBadge status={application.status} />
+      </h2>
+      {application.allowed_next.length > 0 ? (
+        <div className="button-row">
+          {application.allowed_next.map((next) => (
+            <button
+              key={next}
+              type="button"
+              className="button"
+              disabled={busy}
+              onClick={() => {
+                undo.reset();
+                move.mutate(next);
+              }}
+            >
+              {MOVE_LABELS[next]}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="muted">This is a final status.</p>
+      )}
+      {error ? (
+        <p role="alert" className="field-error">
+          {error instanceof ApiError ? error.displayMessage : "Couldn't change the status."}
+        </p>
+      ) : null}
+      <ol className="status-history" aria-label="Status history">
+        {history.map((change) => (
+          <li key={change.changed_at + change.to_status}>
+            <strong>{STATUS_LABELS[change.to_status]}</strong>{" "}
+            <span className="muted">
+              <time dateTime={change.changed_at}>{formatDateTime(change.changed_at)}</time>
+            </span>
+          </li>
+        ))}
+      </ol>
+      {canUndo && latest ? (
+        <button
+          type="button"
+          className="button button-small"
+          disabled={busy}
+          onClick={() => {
+            move.reset();
+            undo.mutate();
+          }}
+        >
+          Undo “{STATUS_LABELS[latest.to_status]}”
+        </button>
+      ) : null}
+    </section>
+  );
+}
 
 /** One application: all fields, the screenshot and the resume download (TRK-2.4, TRK-3.1). */
 export function ApplicationDetailPage() {
@@ -86,6 +175,8 @@ export function ApplicationDetailPage() {
           )}
         </dd>
       </dl>
+
+      <StatusPanel application={data} />
 
       <div className="danger-zone">
         {confirming ? (

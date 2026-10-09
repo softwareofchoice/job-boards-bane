@@ -2,7 +2,10 @@
 
 Requires the foundation tasks F-1 to F-6 and F-10.
 
-> **Status:** all tasks done. T-8 passes locally against the real backend; its first CI run
+> **Status:** all tasks done. T-9 to T-12 add status tracking (TRK-4, TRK-5), requested
+> after v1.
+>
+> T-1 to T-8: T-8 passes locally against the real backend; its first CI run
 > will be on the pull request for this work. Notes on where the code differs from the design are under
 > *Implementation notes* in [`design.md`](design.md#implementation-notes).
 
@@ -46,3 +49,23 @@ Requires the foundation tasks F-1 to F-6 and F-10.
   The end-to-end scenario from `design.md`.
   _Criteria:_ TRK-1.2, TRK-2.1, TRK-2.4
   _Verify:_ passes in CI.
+
+- [x] **T-9 Status migration, model and transitions**
+  `applications.status`, `application_status_changes`, backfill of existing applications;
+  `app/tracker/status.py` transitions table.
+  _Criteria:_ TRK-4.1, TRK-4.2, TRK-4.4
+  _Verify:_ migration test (with the drift check); unit tests for the transitions.
+
+- [x] **T-10 Status API**
+  Change, undo, `?status=` filter, history in `Application`, `/status-flow`.
+  _Criteria:_ TRK-4.1–TRK-4.7, TRK-5.1
+  _Verify:_ integration tests for every allowed and refused change, undo, filter, flow counts.
+
+- [x] **T-11 Status on the list and detail pages**
+  _Criteria:_ TRK-4.5–TRK-4.7
+  _Verify:_ Vitest tests for the buttons, refused change message, undo and filter.
+
+- [x] **T-12 Status flow plot**
+  _Criteria:_ TRK-5.1–TRK-5.4
+  _Verify:_ Vitest tests for ribbons, tooltip and table; palette checked with the validator;
+  screenshot reviewed in light and dark mode; E2E updated.

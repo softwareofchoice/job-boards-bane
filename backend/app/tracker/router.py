@@ -18,6 +18,8 @@ from app.tracker.schemas import (
     ApplicationPage,
     DuplicateCheck,
     PageParams,
+    StatusChangeIn,
+    StatusFlow,
 )
 
 router = APIRouter(prefix="/api/tracker", tags=["tracker"])
@@ -67,7 +69,9 @@ def check_url(
 def list_applications(
     session: SessionDep, params: Annotated[PageParams, Query()]
 ) -> ApplicationPage:
-    rows, total = service.list_applications(session, params.q, params.page, params.page_size)
+    rows, total = service.list_applications(
+        session, params.q, params.page, params.page_size, params.status
+    )
     return ApplicationPage(
         items=[service.to_out(a) for a in rows],
         total=total,
@@ -84,3 +88,23 @@ def get_application(application_id: uuid.UUID, session: SessionDep) -> Applicati
 @router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_application(application_id: uuid.UUID, session: SessionDep, store: StoreDep) -> None:
     service.delete_application(session, store, application_id)
+
+
+@router.post("/applications/{application_id}/status")
+def change_status(
+    application_id: uuid.UUID, change: StatusChangeIn, session: SessionDep
+) -> ApplicationOut:
+    """Move the application to a new status (TRK-4.2 to TRK-4.4). 409 if not allowed."""
+    return service.to_out(service.change_status(session, application_id, change.status))
+
+
+@router.delete("/applications/{application_id}/status/latest")
+def undo_status_change(application_id: uuid.UUID, session: SessionDep) -> ApplicationOut:
+    """Undo the most recent status change (TRK-4.6)."""
+    return service.to_out(service.undo_status_change(session, application_id))
+
+
+@router.get("/status-flow")
+def status_flow(session: SessionDep) -> StatusFlow:
+    """Counts of each path through the statuses, for the parallel sets plot (TRK-5)."""
+    return service.status_flow(session)

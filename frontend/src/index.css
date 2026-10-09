@@ -11,6 +11,12 @@
   --error-bg: #fff5f5;
   --warning-bg: #fff9db;
   --warning-border: #f0c419;
+  /* Status flow plot (TRK-5): categorical slots 1–3, checked all-pairs for colour blindness
+     against this surface and the dark one below. */
+  --flow-offer: #2a78d6;
+  --flow-rejected: #eb6834;
+  --flow-open: #1baf7a;
+  --chart-node: #52514e;
   font-family:
     system-ui,
     -apple-system,
@@ -36,6 +42,11 @@
     --error-bg: #3a1d1d;
     --warning-bg: #3a3218;
     --warning-border: #b38f00;
+    --flow-offer: #3987e5;
+    --flow-rejected: #d95926;
+    --flow-open: #199e70;
+    --chart-node: #c3c2b7;
+    --flow-ribbon-opacity: 0.75;
   }
 }
 
@@ -612,4 +623,202 @@ a {
 
 .pages-summary {
   font-weight: 600;
+}
+
+/* Job tracker status (TRK-4) */
+.status-badge {
+  display: inline-block;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.status-offer {
+  border-color: var(--flow-offer);
+}
+
+.status-rejected {
+  border-color: var(--flow-rejected);
+}
+
+.status-interviewing {
+  border-color: var(--flow-open);
+}
+
+.status-panel {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.status-panel h2 {
+  margin-top: 0;
+}
+
+.status-history {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+}
+
+.status-history li {
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 2px solid var(--border);
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+}
+
+/* Status flow plot (TRK-5) */
+.status-flow {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.status-flow h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.flow-frame {
+  position: relative;
+}
+
+.flow-plot {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.flow-legend {
+  display: flex;
+  gap: 1.25rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.flow-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.flow-key {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.flow-key.flow-offer {
+  background: var(--flow-offer);
+}
+
+.flow-key.flow-rejected {
+  background: var(--flow-rejected);
+}
+
+.flow-key.flow-open {
+  background: var(--flow-open);
+}
+
+.flow-axis-title {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.flow-ribbon {
+  opacity: var(--flow-ribbon-opacity, 0.55);
+  stroke: var(--surface);
+  stroke-width: 1;
+  cursor: default;
+  outline: none;
+  transition: opacity 120ms;
+}
+
+.flow-ribbon.flow-offer {
+  fill: var(--flow-offer);
+}
+
+.flow-ribbon.flow-rejected {
+  fill: var(--flow-rejected);
+}
+
+.flow-ribbon.flow-open {
+  fill: var(--flow-open);
+}
+
+.flow-ribbons-active .flow-ribbon {
+  opacity: 0.2;
+}
+
+.flow-ribbons-active .flow-ribbon-hover,
+.flow-ribbon:focus-visible {
+  opacity: 0.9;
+}
+
+.flow-ribbon:focus-visible {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+/* Bars and labels sit on top of the ribbons but mustn't block hovering them. */
+.flow-node {
+  pointer-events: none;
+}
+
+.flow-node rect {
+  fill: var(--chart-node);
+}
+
+.flow-label {
+  fill: var(--text);
+  font-size: 12px;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.flow-count {
+  fill: var(--muted);
+}
+
+.flow-tooltip {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 240px;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.flow-tooltip span {
+  color: var(--muted);
+}
+
+.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

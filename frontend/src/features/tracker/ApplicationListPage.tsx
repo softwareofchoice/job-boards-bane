@@ -5,17 +5,21 @@ import { Link } from "react-router-dom";
 import { ApiError } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
-import { listApplications, trackerKeys } from "./api";
+import { listApplications, trackerKeys, type Status } from "./api";
+import { StatusBadge } from "./StatusBadge";
+import { StatusFlowPlot } from "./StatusFlowPlot";
+import { STATUS_LABELS, STATUS_OPTIONS } from "./status";
 
 /** All logged applications, newest first, with search and pagination (TRK-2.1 to TRK-2.3). */
 export function ApplicationListPage() {
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<Status | "">("");
   const [page, setPage] = useState(1);
   const q = useDebouncedValue(search.trim(), 300);
 
   const { data, isPending, isError, error, isPlaceholderData } = useQuery({
-    queryKey: trackerKeys.list(q, page),
-    queryFn: () => listApplications(q, page),
+    queryKey: trackerKeys.list(q, page, status),
+    queryFn: () => listApplications(q, page, status),
     placeholderData: keepPreviousData,
   });
 
@@ -30,17 +34,39 @@ export function ApplicationListPage() {
         </Link>
       </div>
 
-      <div className="field search-field">
-        <label htmlFor="tracker-search">Search by title or company</label>
-        <input
-          id="tracker-search"
-          type="search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
+      <StatusFlowPlot />
+
+      <div className="filters">
+        <div className="field search-field">
+          <label htmlFor="tracker-search">Search by title or company</label>
+          <input
+            id="tracker-search"
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="tracker-status">Status</label>
+          <select
+            id="tracker-status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as Status | "");
+              setPage(1);
+            }}
+          >
+            <option value="">All statuses</option>
+            {STATUS_OPTIONS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isPending ? <p aria-busy="true">Loading…</p> : null}
@@ -52,8 +78,12 @@ export function ApplicationListPage() {
 
       {data && data.items.length === 0 ? (
         <p className="empty">
-          {q ? (
-            <>No applications match “{q}”.</>
+          {q || status ? (
+            <>
+              No applications match
+              {q ? ` “${q}”` : ""}
+              {status ? ` with the status ${STATUS_LABELS[status]}` : ""}.
+            </>
           ) : (
             <>
               No applications yet. <Link to="/tracker/new">Log your first one.</Link>
@@ -71,6 +101,7 @@ export function ApplicationListPage() {
                 <th scope="col">Company</th>
                 <th scope="col">Posting</th>
                 <th scope="col">Applied</th>
+                <th scope="col">Status</th>
                 <th scope="col">Screenshot</th>
               </tr>
             </thead>
@@ -88,6 +119,9 @@ export function ApplicationListPage() {
                   </td>
                   <td>
                     <time dateTime={a.created_at}>{formatDateTime(a.created_at)}</time>
+                  </td>
+                  <td>
+                    <StatusBadge status={a.status} />
                   </td>
                   <td>{a.screenshot ? "Yes" : "—"}</td>
                 </tr>

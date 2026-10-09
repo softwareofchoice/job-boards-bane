@@ -8,6 +8,24 @@ export interface StoredFileInfo {
   size_bytes: number;
 }
 
+export type Status = "applied" | "interviewing" | "offer" | "rejected";
+
+export interface StatusChange {
+  from_status: Status | null;
+  to_status: Status;
+  changed_at: string;
+}
+
+export interface FlowPath {
+  statuses: [Status, Status, Status];
+  count: number;
+}
+
+export interface StatusFlow {
+  total: number;
+  paths: FlowPath[];
+}
+
 export interface Application {
   id: string;
   job_title: string;
@@ -16,6 +34,9 @@ export interface Application {
   screenshot: StoredFileInfo | null;
   resume: StoredFileInfo;
   created_at: string;
+  status: Status;
+  allowed_next: Status[];
+  status_history: StatusChange[];
 }
 
 export interface ApplicationPage {
@@ -42,7 +63,9 @@ const BASE = "/api/tracker/applications";
 
 export const trackerKeys = {
   all: ["tracker"] as const,
-  list: (q: string, page: number) => ["tracker", "list", q, page] as const,
+  list: (q: string, page: number, status: Status | "") =>
+    ["tracker", "list", q, page, status] as const,
+  flow: ["tracker", "flow"] as const,
   detail: (id: string) => ["tracker", "detail", id] as const,
 };
 
@@ -58,10 +81,17 @@ export function createApplication(input: NewApplication): Promise<Application> {
   return api<Application>(BASE, { method: "POST", body: form });
 }
 
-export function listApplications(q: string, page: number): Promise<ApplicationPage> {
+export function listApplications(
+  q: string,
+  page: number,
+  status: Status | "" = "",
+): Promise<ApplicationPage> {
   const params = new URLSearchParams({ page: String(page) });
   if (q) {
     params.set("q", q);
+  }
+  if (status) {
+    params.set("status", status);
   }
   return api<ApplicationPage>(`${BASE}?${params}`);
 }
@@ -76,4 +106,21 @@ export function deleteApplication(id: string): Promise<void> {
 
 export function checkUrl(url: string): Promise<DuplicateCheck> {
   return api<DuplicateCheck>(`${BASE}/check-url?${new URLSearchParams({ url })}`);
+}
+
+export function changeStatus(id: string, status: Status): Promise<Application> {
+  return api<Application>(`${BASE}/${encodeURIComponent(id)}/status`, {
+    method: "POST",
+    body: { status },
+  });
+}
+
+export function undoStatusChange(id: string): Promise<Application> {
+  return api<Application>(`${BASE}/${encodeURIComponent(id)}/status/latest`, {
+    method: "DELETE",
+  });
+}
+
+export function getStatusFlow(): Promise<StatusFlow> {
+  return api<StatusFlow>("/api/tracker/status-flow");
 }

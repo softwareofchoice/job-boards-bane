@@ -21,6 +21,45 @@ applications
   index using gin ((job_title || ' ' || company_name) gin_trgm_ops)   -- TRK-2.2
 ```
 
+### Status (TRK-4)
+
+```
+applications
+  ...
+  status                 varchar(20)   not null default 'applied'
+                         check (status in ('applied', 'interviewing', 'offer', 'rejected'))
+  index (status)
+
+application_status_changes                      -- TRK-4.4: one row per change
+  id              uuid        pk
+  application_id  uuid        not null fk -> applications(id) on delete cascade
+  from_status     varchar(20) null              -- null for the initial "applied"
+  to_status       varchar(20) not null
+  changed_at      timestamptz not null default now()
+  index (application_id, changed_at)
+```
+
+`applications.status` is the current status, kept in step with the last row of
+its history in the same transaction, so the list can filter and show it without
+a join. The migration gives every existing application an initial `applied`
+row dated with its `created_at`.
+
+Allowed changes (TRK-4.2) are one table in `app/tracker/status.py`, used by the
+service and returned to the frontend so the buttons and the rule can't drift:
+
+```python
+TRANSITIONS = {
+    "applied": ("interviewing", "rejected"),
+    "interviewing": ("offer", "rejected"),
+    "offer": (),
+    "rejected": (),
+}
+```
+
+Each change locks the application row (`SELECT … FOR UPDATE`) so two clicks
+can't both apply. Undo (TRK-4.6) deletes the latest change row and sets the
+status back to its `from_status`.
+
 URL normalisation for the duplicate check: lower-case the scheme and host,
 remove the fragment, remove `utm_*` parameters, remove a trailing `/`.
 
@@ -35,6 +74,19 @@ All routes are under `/api/tracker`.
 | GET    | `/applications`            | `?q=&page=1&page_size=25`                                                                      | `{items: Application[], total, page}` | TRK-2.1–2.3       |
 | GET    | `/applications/{id}`       | —                                                                                              | `Application`                         | TRK-2.4           |
 | DELETE | `/applications/{id}`       | —                                                                                              | `204`                                 | TRK-3.1           |
+| POST   | `/applications/{id}/status` | `{"status": "interviewing"}`                                                                 | `200` `Application`; `409 invalid_status_change` with `allowed` | TRK-4.2–4.4 |
+| DELETE | `/applications/{id}/status/latest` | —                                                                                     | `200` `Application`; `409` if only the initial status is left | TRK-4.6 |
+| GET    | `/status-flow`             | —                                                                                              | `{total, paths: [{statuses: [s1, s2, s3], count}]}` | TRK-5.1 |
+
+`GET /applications` also takes `?status=`. `Application` gains `status`,
+`allowed_next` (from the transitions table) and `status_history`
+(`[{from_status, to_status, changed_at}]`, oldest first).
+
+`/status-flow` turns each application's history into a three-stage path,
+carrying the last status forward when a path stops early (Applied → Rejected
+becomes `applied, rejected, rejected`; a fresh application is `applied,
+applied, applied`), and counts identical paths. Histories can't be longer than
+three, so nothing is cut.
 
 ```jsonc
 // Application
@@ -80,7 +132,17 @@ logged, not shown to the user; a missing file isn't an error.
   and show the duplicate warning if needed. Show an image preview after a
   screenshot is chosen. The submit button is disabled while sending.
 - **`/tracker/:id`** — detail page: fields, screenshot image (click to enlarge),
-  resume download link, delete button with a confirmation dialog.
+  resume download link, delete button with a confirmation dialog. Also the
+  status (TRK-4.5): a badge, one button per allowed next status, "Undo last
+  change", and the history as a timeline.
+- **Status flow plot (TRK-5)** on the list page, above the table: a hand-built
+  SVG parallel sets plot (no chart library). Three axes; at each axis the
+  categories are stacked bars sized by count and labelled with name and count;
+  ribbons connect them, coloured by outcome with the validated categorical
+  slots 1–3 (Offer blue, Rejected orange, still open aqua; all-pairs checked in
+  light and dark mode). Hover or keyboard focus on a ribbon shows a tooltip
+  with the path and count; a "Show as table" toggle lists every path. Hidden
+  when there are no applications.
 
 ## Decisions
 
@@ -109,8 +171,21 @@ Where the code differs from the plan above, and why:
 - **Client upload limit.** The form checks files against 10 MB (the backend default) before
   uploading; the server's `MAX_UPLOAD_MB` setting is still what's enforced.
 - **Delete confirmation** is an inline "Yes, delete / Cancel" prompt rather than a modal.
+- **Status flow labels.** The first axis has one category, so its count is in the axis title.
+  The middle axis's labels sit in the gap above each bar (ribbons cross on both sides of it);
+  the last axis's labels sit to its right. Bars and labels pass pointer events through, so
+  hovering anywhere on a ribbon shows its tooltip.
+- **Status filter and the plot.** The plot always shows every application (TRK-5.4); the
+  status filter and search apply to the table only.
 
 ## Test strategy
+
+Status (TRK-4, TRK-5): unit tests for the transitions table and the path
+building; API tests for every allowed and refused change, the history,
+undo, the status filter, cascade on delete and the flow counts; Vitest tests
+for the buttons, undo, the plot's ribbons and table; the E2E test moves an
+application to Interviewing and back with undo.
+
 
 - **Unit:** URL normalisation cases; Pydantic validation (lengths, URL scheme).
 - **Integration (API + Postgres):**

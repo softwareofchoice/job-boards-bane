@@ -51,6 +51,30 @@ test("log an application, find it in the list, open it and download the resume",
   expect(download.suggestedFilename()).toBe("e2e-resume.pdf");
   expect(await readFile(await download.path())).toEqual(PDF);
 
+  // Status: Applied → Interviewing, undo, then Interviewing → Offer (TRK-4).
+  const status = page.getByRole("region", { name: /^Status/ });
+  await expect(status.getByText("Applied", { exact: true }).first()).toBeVisible();
+  await status.getByRole("button", { name: "Got an interview" }).click();
+  await expect(status.getByRole("button", { name: "Got an offer" })).toBeVisible();
+  await status.getByRole("button", { name: "Undo “Interviewing”" }).click();
+  await expect(status.getByRole("button", { name: "Got an interview" })).toBeVisible();
+  await status.getByRole("button", { name: "Got an interview" }).click();
+  await status.getByRole("button", { name: "Got an offer" }).click();
+  await expect(status.getByText("This is a final status.")).toBeVisible();
+  await expect(
+    status.getByRole("list", { name: "Status history" }).getByRole("listitem"),
+  ).toHaveCount(3);
+
+  // The list shows it under its status, and the flow plot includes it (TRK-4.7, TRK-5).
+  await page.getByRole("link", { name: "← All applications" }).click();
+  await page.getByLabel("Status", { exact: true }).selectOption("offer");
+  await page.getByLabel("Search by title or company").fill(title);
+  await expect(page.getByRole("row")).toHaveCount(2);
+  await expect(
+    page.getByRole("img", { name: /^Applied → Interviewing → Offer: \d+ application/ }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: title }).click();
+
   // Clean up, which also exercises delete.
   await page.getByRole("button", { name: "Delete application" }).click();
   await page.getByRole("button", { name: "Yes, delete" }).click();
